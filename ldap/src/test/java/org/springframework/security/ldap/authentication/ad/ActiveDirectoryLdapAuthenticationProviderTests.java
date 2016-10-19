@@ -70,8 +70,9 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 
     @Test
     public void bindPrincipalIsCreatedCorrectly() throws Exception {
-        assertEquals("joe@mydomain.eu", provider.createBindPrincipal("joe"));
-        assertEquals("joe@mydomain.eu", provider.createBindPrincipal("joe@mydomain.eu"));
+        assertEquals("joe@mydomain.eu", provider.createBindPrincipal("joe", true));
+        assertEquals("joe@mydomain.eu", provider.createBindPrincipal("joe@mydomain.eu", true));
+        assertEquals("joe", provider.createBindPrincipal("joe", false));
     }
 
     @Test

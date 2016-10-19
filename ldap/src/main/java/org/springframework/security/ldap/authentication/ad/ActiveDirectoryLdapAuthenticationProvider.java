@@ -98,9 +98,23 @@ public final class ActiveDirectoryLdapAuthenticationProvider extends AbstractLda
     private final String url;
     private boolean convertSubErrorCodesToExceptions;
     private String searchFilter = "(&(objectClass=user)(userPrincipalName={0}))";
+    private boolean searchFilterAppendsDomain = true;
 
     // Only used to allow tests to substitute a mock LdapContext
     ContextFactory contextFactory = new ContextFactory();
+
+    /**
+     * @param domain the domain name (may be null or empty)
+     * @param url an LDAP url (or multiple URLs)
+     * @param rootDn the root DN (may be null or empty)
+     */
+    public ActiveDirectoryLdapAuthenticationProvider(String domain, String url,
+                                                     String rootDn) {
+        Assert.isTrue(StringUtils.hasText(url), "Url cannot be empty");
+        this.domain = StringUtils.hasText(domain) ? domain.toLowerCase() : null;
+        this.url = url;
+        this.rootDn = StringUtils.hasText(rootDn) ? rootDn.toLowerCase() : null;
+    }
 
     /**
      * @param domain the domain name (may be null or empty)
@@ -163,7 +177,7 @@ public final class ActiveDirectoryLdapAuthenticationProvider extends AbstractLda
 
         Hashtable<String, String> env = new Hashtable<String, String>();
         env.put(Context.SECURITY_AUTHENTICATION, "simple");
-        String bindPrincipal = createBindPrincipal(username);
+        String bindPrincipal = createBindPrincipal(username, true);
         env.put(Context.SECURITY_PRINCIPAL, bindPrincipal);
         env.put(Context.PROVIDER_URL, bindUrl);
         env.put(Context.SECURITY_CREDENTIALS, password);
@@ -268,7 +282,7 @@ public final class ActiveDirectoryLdapAuthenticationProvider extends AbstractLda
         SearchControls searchControls = new SearchControls();
         searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 
-        String bindPrincipal = createBindPrincipal(username);
+        String bindPrincipal = createBindPrincipal(username, searchFilterAppendsDomain);
         String searchRoot = rootDn != null ? rootDn : searchRootFromPrincipal(bindPrincipal);
 
         try {
@@ -311,8 +325,8 @@ public final class ActiveDirectoryLdapAuthenticationProvider extends AbstractLda
         return root.toString();
     }
 
-    String createBindPrincipal(String username) {
-        if (domain == null || username.toLowerCase().endsWith(domain)) {
+    String createBindPrincipal(String username, boolean appendDomain) {
+        if (!appendDomain || domain == null || username.toLowerCase().endsWith(domain)) {
             return username;
         }
 
@@ -335,9 +349,10 @@ public final class ActiveDirectoryLdapAuthenticationProvider extends AbstractLda
 
     /**
      * The LDAP filter string to search for the user being authenticated.
-     * Occurrences of {0} are replaced with the {@code username@domain}.
+     * Occurrences of {0} are replaced with the {@code username@domain} or {@code username},
+     * depending on searchFilterAppendsDomain.
      * <p>
-     * Defaults to: {@code (&(objectClass=user)(userPrincipalName={0}))}
+     * Defaults to: {@code (&(objectClass=user)(userPrincipalName={0}))}.
      * </p>
      *
      * @param searchFilter the filter string
@@ -347,6 +362,17 @@ public final class ActiveDirectoryLdapAuthenticationProvider extends AbstractLda
     public void setSearchFilter(String searchFilter) {
         Assert.hasText(searchFilter,"searchFilter must have text");
         this.searchFilter = searchFilter;
+    }
+
+    /**
+     * Controls whether searchFilter contains domain, or just username.
+     * <p>
+     * Defaults to: true
+     * </p>
+     * @param searchFilterAppendsDomain whether to append the domain when constructing the search filter.
+     */
+    public void setSearchFilterAppendsDomain(boolean searchFilterAppendsDomain) {
+        this.searchFilterAppendsDomain = searchFilterAppendsDomain;
     }
 
     static class ContextFactory {
