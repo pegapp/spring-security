@@ -73,8 +73,9 @@ public class ActiveDirectoryLdapAuthenticationProviderTests {
 
 	@Test
 	public void bindPrincipalIsCreatedCorrectly() throws Exception {
-		assertThat(provider.createBindPrincipal("joe")).isEqualTo("joe@mydomain.eu");
-		assertThat(provider.createBindPrincipal("joe@mydomain.eu")).isEqualTo("joe@mydomain.eu");
+		assertThat("joe@mydomain.eu").isEqualTo(provider.createBindPrincipal("joe", true));
+		assertThat("joe@mydomain.eu").isEqualTo(provider.createBindPrincipal("joe@mydomain.eu", true));
+		assertThat("joe").isEqualTo(provider.createBindPrincipal("joe", false));
 	}
 
 	@Test
